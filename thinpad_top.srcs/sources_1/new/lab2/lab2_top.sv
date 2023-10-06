@@ -113,15 +113,25 @@ module lab2_top (
   // TODO: 在 lab2 目录中新建 counter.sv，实现该模块
   counter u_counter (
       .clk    (clk_10M),
-      .reset  (reset_of_clk10M),
+      .reset  (reset_btn),
       .trigger(trigger),
       .count  (count)
   );
 
   // 按键检测模块，在按键上升沿（按下）后输出高电平脉冲
   // TODO: 同上，实现 trigger 模块，并例化
+  trigger u_trigger (
+    .clk      (clk_10M),
+    .reset    (reset_btn),
+    .push_btn (push_btn),
+    .trigger  (trigger)
+  );
 
   // 低位数码管译码器
   // TODO: 例化模板中的 SEG7_LUT 模块
+  SEG7_LUT u_seg7_lut (
+    .oSEG1(dpy0),  // 数码管低位信号输出
+    .iDIG(count)   // 输入信号，通常是计数器的输出
+  );
 
 endmodule
