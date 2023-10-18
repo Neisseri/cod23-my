@@ -5,13 +5,11 @@ module controller (
     // signals connected to register file module
     output reg [4:0] rf_raddr_a, // register id of reading port a
     input wire [15:0] rf_rdata_a, // register data of reading port a
-
     output reg [4:0] rf_raddr_b,
     input wire [15:0] rf_rdata_b,
 
     output reg [4:0] rf_waddr, // register address of writing
     output reg [15:0] rf_wdata, // register data of writing
-
     output reg rf_we, // enable signal of writing
 
     // signal connected to ALU module
@@ -35,6 +33,14 @@ module controller (
     logic [15:0] imm; // immediate number
     logic [4:0] rd, rs1, rs2;
     logic [3:0] opcode;
+
+    logic sign;
+
+    logic [15:0] rs1_data;
+    logic [15:0] rs2_data;
+    logic [15:0] rd_data;
+
+    
 
     always_comb begin // combinatorial logic
         is_rtype = (inst_reg[2:0] == 3'b001);
@@ -95,9 +101,16 @@ module controller (
                         rf_raddr_a <= rs1;
                         rf_raddr_b <= rs2;
                         state <= ST_CALC;
-                    end else if () begin
+                    end else if (is_itype) begin
                         // TODO: other instructions
-
+                        if (is_peek) begin // read data from rd
+                            rf_raddr_a <= rd;
+                            state <= ST_READ_REG;
+                        end else if (is_poke) begin // write imm into rd
+                            rf_waddr <= rd;
+                            rf_wdata <= rd_data;
+                            state <= ST_WRITE_REG;
+                        end
                     end else begin
                         // undefined instruction
                         // return to initial state
@@ -108,11 +121,19 @@ module controller (
                 ST_CALC: begin
                     // TODO: transfer data to ALU
                     // get results from ALU
+                    alu u_alu (
+                        .a      (rs1),
+                        .b      (rs2),
+                        .op     (opcode),
+                        .y      (rd),
+                        .signal (sign)
+                    );
                     state <= ST_WRITE_REG;
                 end
 
                 ST_WRITE_REG: begin
                     // TODO: store results in register
+                    rf_we <= 1'b1;
                     state <= ST_INIT;
                 end
 

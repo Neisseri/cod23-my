@@ -106,8 +106,70 @@ module lab3_top (
   /* =========== Demo code end =========== */
 
   // TODO: 内部信号声明
+  logic step;
+
+  logic [ 4:0] raddr_a;
+  logic [15:0] rdata_a;
+  logic [ 4:0] raddr_b;
+  logic [15:0] rdata_b;
+
+  logic [ 4:0] waddr;
+  logic [15:0] wdata;
+  logic we;
+
+  logic [15:0] a;
+  logic [15:0] b;
+  logic [ 3:0] op;
+  logic [15:0] y;
 
   // TODO: 实验模块例化
+  button_in u_button_in (
+    .clk      (clk_10M),
+    .push_btn (push_btn),
+    .step     (step)
+  );
 
+  controller u_controller (
+    .clk        (clk_10M),
+    .reset      (reset_btn),
+
+    .rf_raddr_a (raddr_a),
+    .rf_rdata_a (rdata_a),
+    .rf_raddr_b (raddr_b),
+    .rf_rdata_b (rdata_b),
+
+    .rf_waddr   (waddr),
+    .rf_wdata   (wdata),
+    .rf_we      (we),
+
+    .alu_a      (a),
+    .alu_b      (b),
+    .alu_op     (op),
+    .alu_       (y),
+
+    .step       (step),
+    .dip_sw     (dip_sw),
+    .leds       (leds)
+  );
+
+  register_file #(
+    .UNIT_SIZE(16), // 16 bits each register
+    .SIZE(32) // 32 registers
+  ) u_register_file (
+      .clk     (clk_10M),
+      .waddr   (waddr),
+      .wdata   (wdata),
+      .raddr_a (raddr_a),
+      .rdata_a (rdata_a),
+      .raddr_b (raddr_b),
+      .rdata_b (rdata_b)
+  );
+
+  alu u_alu (
+    .a  (a),
+    .b  (b),
+    .op (op),
+    .y  (y)
+  );
 
 endmodule
