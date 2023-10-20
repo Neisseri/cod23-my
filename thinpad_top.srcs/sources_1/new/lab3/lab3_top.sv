@@ -125,6 +125,7 @@ module lab3_top (
   // TODO: 实验模块例化
   button_in u_button_in (
     .clk      (clk_10M),
+    .reset    (reset_btn),
     .push_btn (push_btn),
     .step     (step)
   );
@@ -145,7 +146,7 @@ module lab3_top (
     .alu_a      (a),
     .alu_b      (b),
     .alu_op     (op),
-    .alu_       (y),
+    .alu_y      (y),
 
     .step       (step),
     .dip_sw     (dip_sw),
@@ -157,8 +158,10 @@ module lab3_top (
     .SIZE(32) // 32 registers
   ) u_register_file (
       .clk     (clk_10M),
+      .reset   (reset_btn),
       .waddr   (waddr),
       .wdata   (wdata),
+      .we      (we),
       .raddr_a (raddr_a),
       .rdata_a (rdata_a),
       .raddr_b (raddr_b),

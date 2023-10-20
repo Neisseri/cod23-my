@@ -3,12 +3,12 @@ module controller (
     input wire reset,
 
     // signals connected to register file module
-    output reg [4:0] rf_raddr_a, // register id of reading port a
+    output reg [ 4:0] rf_raddr_a, // register id of reading port a
     input wire [15:0] rf_rdata_a, // register data of reading port a
-    output reg [4:0] rf_raddr_b,
+    output reg [ 4:0] rf_raddr_b,
     input wire [15:0] rf_rdata_b,
 
-    output reg [4:0] rf_waddr, // register address of writing
+    output reg [ 4:0] rf_waddr, // register address of writing
     output reg [15:0] rf_wdata, // register data of writing
     output reg rf_we, // enable signal of writing
 
@@ -31,16 +31,8 @@ module controller (
     // depending on valid 'inst_reg' value
     logic is_rtype, is_itype, is_peek, is_poke;
     logic [15:0] imm; // immediate number
-    logic [4:0] rd, rs1, rs2;
-    logic [3:0] opcode;
-
-    logic sign;
-
-    logic [15:0] rs1_data;
-    logic [15:0] rs2_data;
-    logic [15:0] rd_data;
-
-    
+    logic [ 4:0] rd, rs1, rs2;
+    logic [ 3:0] opcode;
 
     always_comb begin // combinatorial logic
         is_rtype = (inst_reg[2:0] == 3'b001);
@@ -108,7 +100,7 @@ module controller (
                             state <= ST_READ_REG;
                         end else if (is_poke) begin // write imm into rd
                             rf_waddr <= rd;
-                            rf_wdata <= rd_data;
+                            rf_wdata <= imm;
                             state <= ST_WRITE_REG;
                         end
                     end else begin
@@ -121,13 +113,11 @@ module controller (
                 ST_CALC: begin
                     // TODO: transfer data to ALU
                     // get results from ALU
-                    alu u_alu (
-                        .a      (rs1),
-                        .b      (rs2),
-                        .op     (opcode),
-                        .y      (rd),
-                        .signal (sign)
-                    );
+                    alu_a <= rf_rdata_a;
+                    alu_b <= rf_rdata_b;
+                    alu_op <= opcode;
+                    rf_waddr <= rd;
+                    rf_wdata <= alu_y;
                     state <= ST_WRITE_REG;
                 end
 
@@ -140,8 +130,14 @@ module controller (
                 ST_READ_REG: begin
                     // TODO: read data from register
                     // store into 'leds'
-                    store <= ST_INIT;
+                    leds <= rf_rdata_a;
+                    state <= ST_INIT;
                 end
+
+                default: begin
+                    state <= ST_INIT;
+                end
+
             endcase
         end
     end

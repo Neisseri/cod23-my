@@ -69,6 +69,16 @@ module lab3_tb;
     end
 
     // TODO: 随机测试各种指令
+    #100;
+    rs1 = 5'b00001;
+    rs2 = 5'b00010;
+    rd  = 5'b00011;
+    opcode = ADD;
+    dip_sw = `inst_rtype(rd, rs1, rs2, opcode);
+    push_btn = 1;
+
+    #100;
+    push_btn = 0;
 
     #10000 $finish;
   end
