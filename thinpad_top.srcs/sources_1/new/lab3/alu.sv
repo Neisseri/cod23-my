@@ -1,8 +1,10 @@
+`default_nettype none
+
 module alu (
-    input  wire [15:0] a,
-    input  wire [15:0] b, // input operand
-    input  wire [ 3:0] op, // operator
-    output reg [15:0] y // output data
+    input  wire signed [15:0] a = 16'b0,
+    input  wire signed [15:0] b = 16'b0, // input operand
+    input  wire [ 3:0] op = 4'b0, // operator
+    output reg  signed [15:0] y = 16'b0// output data
 );
 
     always_comb begin
@@ -32,15 +34,15 @@ module alu (
             end
 
             4'b0111: begin // 7: SLL
-                y = a << b;
+                y = a << b[3:0];
             end
 
             4'b1000: begin // 8: SRL
-                y = $signed(a) >> b;
+                y = a >> b[3:0];
             end
 
             4'b1001: begin // 9: SRA
-                y = a >>> b;
+                y = a >>> b[3:0];
             end
 
             4'b1010: begin // 10: ROL
@@ -118,6 +120,7 @@ module alu (
             end
 
             default: begin
+                y = 16'b0;
             end
         endcase
     end

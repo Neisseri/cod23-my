@@ -1,12 +1,14 @@
+`default_nettype none
+
 module controller (
     input wire clk,
     input wire reset,
 
     // signals connected to register file module
     output reg [ 4:0] rf_raddr_a, // register id of reading port a
-    input wire [15:0] rf_rdata_a, // register data of reading port a
+    input wire [15:0] rf_rdata_a = 16'b0, // register data of reading port a
     output reg [ 4:0] rf_raddr_b,
-    input wire [15:0] rf_rdata_b,
+    input wire [15:0] rf_rdata_b = 16'b0,
 
     output reg [ 4:0] rf_waddr, // register address of writing
     output reg [15:0] rf_wdata, // register data of writing
@@ -16,11 +18,11 @@ module controller (
     output reg [15:0] alu_a,
     output reg [15:0] alu_b,
     output reg [ 3:0] alu_op,
-    input wire [15:0] alu_y,
+    input wire [15:0] alu_y = 16'b0,
 
     // controlling signal
-    input wire step, // user button state pulse
-    input wire [31:0] dip_sw, // 32 bits dip switch
+    input wire step = 0, // user button state pulse
+    input wire [31:0] dip_sw = 32'b0, // 32 bits dip switch
     output reg [15:0] leds
 );
 
@@ -54,7 +56,10 @@ module controller (
         ST_DECODE,
         ST_CALC,
         ST_READ_REG,
-        ST_WRITE_REG
+        ST_WRITE_REG,
+        ST_WAIT,
+        ST_WAIT_CALC,
+        ST_WAIT_READ
     } state_t;
 
     // current state register of state machine
@@ -80,6 +85,7 @@ module controller (
         end else begin
             case (state)
                 ST_INIT: begin
+                    rf_we <= 1'b0;
                     if (step) begin
                         inst_reg <= dip_sw;
                         state <= ST_DECODE;
@@ -92,15 +98,16 @@ module controller (
                         // read in operand
                         rf_raddr_a <= rs1;
                         rf_raddr_b <= rs2;
-                        state <= ST_CALC;
+                        state <= ST_WAIT;
                     end else if (is_itype) begin
                         // TODO: other instructions
                         if (is_peek) begin // read data from rd
                             rf_raddr_a <= rd;
-                            state <= ST_READ_REG;
+                            state <= ST_WAIT_READ;
                         end else if (is_poke) begin // write imm into rd
                             rf_waddr <= rd;
                             rf_wdata <= imm;
+                            rf_we <= 1'b1;
                             state <= ST_WRITE_REG;
                         end
                     end else begin
@@ -110,21 +117,34 @@ module controller (
                     end
                 end
 
+                ST_WAIT: begin
+                    state <= ST_CALC;
+                end
+
                 ST_CALC: begin
                     // TODO: transfer data to ALU
                     // get results from ALU
                     alu_a <= rf_rdata_a;
                     alu_b <= rf_rdata_b;
                     alu_op <= opcode;
+                    state <= ST_WAIT_CALC;
+                end
+
+                ST_WAIT_CALC: begin
                     rf_waddr <= rd;
                     rf_wdata <= alu_y;
+                    rf_we <= 1'b1;
                     state <= ST_WRITE_REG;
                 end
 
                 ST_WRITE_REG: begin
                     // TODO: store results in register
-                    rf_we <= 1'b1;
+                    
                     state <= ST_INIT;
+                end
+
+                ST_WAIT_READ: begin
+                    state <= ST_READ_REG;
                 end
 
                 ST_READ_REG: begin

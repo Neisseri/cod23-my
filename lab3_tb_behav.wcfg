@@ -11,15 +11,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="0fs"></ZoomStartTime>
-      <ZoomEndTime time="2652001fs"></ZoomEndTime>
-      <Cursor1Time time="48400000fs"></Cursor1Time>
+      <ZoomStartTime time="37778461fs"></ZoomStartTime>
+      <ZoomEndTime time="45023245fs"></ZoomEndTime>
+      <Cursor1Time time="49700000fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="180"></NameColumnWidth>
-      <ValueColumnWidth column_width="270"></ValueColumnWidth>
+      <ValueColumnWidth column_width="258"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="15" />
+   <WVObjectSize size="20" />
    <wvobject fp_name="/lab3_tb/dut/clk_10M" type="logic">
       <obj_property name="ElementShortName">clk_10M</obj_property>
       <obj_property name="ObjectShortName">clk_10M</obj_property>
@@ -79,5 +79,25 @@
    <wvobject fp_name="/lab3_tb/dut/u_register_file/mem" type="array">
       <obj_property name="ElementShortName">mem[0:31][15:0]</obj_property>
       <obj_property name="ObjectShortName">mem[0:31][15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab3_tb/dut/u_controller/state" type="array">
+      <obj_property name="ElementShortName">state[3:0]</obj_property>
+      <obj_property name="ObjectShortName">state[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab3_tb/dut/u_controller/is_rtype" type="logic">
+      <obj_property name="ElementShortName">is_rtype</obj_property>
+      <obj_property name="ObjectShortName">is_rtype</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab3_tb/dut/u_controller/rf_rdata_a" type="array">
+      <obj_property name="ElementShortName">rf_rdata_a[15:0]</obj_property>
+      <obj_property name="ObjectShortName">rf_rdata_a[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab3_tb/dut/u_controller/rf_rdata_b" type="array">
+      <obj_property name="ElementShortName">rf_rdata_b[15:0]</obj_property>
+      <obj_property name="ObjectShortName">rf_rdata_b[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab3_tb/dut/leds" type="array">
+      <obj_property name="ElementShortName">leds[15:0]</obj_property>
+      <obj_property name="ObjectShortName">leds[15:0]</obj_property>
    </wvobject>
 </wave_config>

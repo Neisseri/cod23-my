@@ -80,6 +80,13 @@ module lab3_tb;
     #100;
     push_btn = 0;
 
+    #1000;
+    rd = 5'b00011;
+    dip_sw = `inst_peek(rd, $urandom_range(0, 65536));
+    push_btn = 1;
+    #100;
+    push_btn = 0;
+
     #10000 $finish;
   end
 

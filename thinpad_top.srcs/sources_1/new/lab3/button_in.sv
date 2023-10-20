@@ -1,3 +1,5 @@
+`default_nettype none
+
 module button_in (
     input wire clk,
     input wire reset,

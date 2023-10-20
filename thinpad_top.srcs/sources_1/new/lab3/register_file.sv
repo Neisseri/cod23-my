@@ -1,3 +1,5 @@
+`default_nettype none
+
 module register_file #(
     parameter UNIT_SIZE = 16, // bit width
     parameter SIZE = 32 // register number
