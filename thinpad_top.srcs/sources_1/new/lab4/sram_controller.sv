@@ -34,8 +34,8 @@ module sram_controller #(
   // TODO: 实现 SRAM 控制器
 
   // tri_state_logic
-  wire [SRAM_DATA_WIDTH-1:0] sram_data_i_comb; // 
-  reg [SRAM_DATA_WIDTH-1:0] sram_data_o_reg;
+  wire [SRAM_DATA_WIDTH-1:0] sram_data_i_comb; // read
+  reg [SRAM_DATA_WIDTH-1:0] sram_data_o_reg; // write
   reg sram_data_t_reg;
 
   assign sram_data = sram_data_t_reg ? 32'bz : sram_data_o_reg;
@@ -71,11 +71,13 @@ module sram_controller #(
       // high-Z when reset
       sram_data_t_reg <= 1'b1;
       sram_data_o_reg <= 32'b0;
+      wb_ack_o <= 1'b0;
       state <= STATE_IDLE;
     end else begin
       case (state)
         
         STATE_IDLE: begin
+          wb_ack_o <= 1'b0;
           if (wb_stb_i && wb_cyc_i) begin
             if (wb_we_i) begin // write
               ram_ce_n_reg <= 1'b0;
