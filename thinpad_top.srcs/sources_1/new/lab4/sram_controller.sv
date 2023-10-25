@@ -53,15 +53,9 @@ module sram_controller #(
 
   state_t state;
 
-  reg ram_ce_n_reg;
-  reg ram_oe_n_reg;
-  reg ram_we_n_reg;
-
-  initial begin
-    ram_ce_n_reg = 1'b1;
-    ram_oe_n_reg = 1'b1;
-    ram_we_n_reg = 1'b1;
-  end
+  reg ram_ce_n_reg = 1'b1;
+  reg ram_oe_n_reg = 1'b1;
+  reg ram_we_n_reg = 1'b1;
 
   always_ff @ (posedge clk_i) begin
     if (rst_i) begin
