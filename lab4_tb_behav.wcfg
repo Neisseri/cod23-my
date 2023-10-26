@@ -11,15 +11,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="1846992fs"></ZoomStartTime>
-      <ZoomEndTime time="2094993fs"></ZoomEndTime>
-      <Cursor1Time time="2787760fs"></Cursor1Time>
+      <ZoomStartTime time="646892560fs"></ZoomStartTime>
+      <ZoomEndTime time="647310561fs"></ZoomEndTime>
+      <Cursor1Time time="648349560fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="180"></NameColumnWidth>
-      <ValueColumnWidth column_width="252"></ValueColumnWidth>
+      <NameColumnWidth column_width="240"></NameColumnWidth>
+      <ValueColumnWidth column_width="270"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="15" />
+   <WVObjectSize size="16" />
    <wvobject fp_name="/lab4_tb/dut/sram_controller_base/clk_i" type="logic">
       <obj_property name="ElementShortName">clk_i</obj_property>
       <obj_property name="ObjectShortName">clk_i</obj_property>
@@ -44,13 +44,13 @@
       <obj_property name="ElementShortName">wb_we_i</obj_property>
       <obj_property name="ObjectShortName">wb_we_i</obj_property>
    </wvobject>
-   <wvobject fp_name="/lab4_tb/dut/sram_controller_base/wb_dat_i" type="array">
-      <obj_property name="ElementShortName">wb_dat_i[31:0]</obj_property>
-      <obj_property name="ObjectShortName">wb_dat_i[31:0]</obj_property>
-   </wvobject>
    <wvobject fp_name="/lab4_tb/dut/sram_controller_base/wb_ack_o" type="logic">
       <obj_property name="ElementShortName">wb_ack_o</obj_property>
       <obj_property name="ObjectShortName">wb_ack_o</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab4_tb/dut/sram_controller_base/wb_dat_o" type="array">
+      <obj_property name="ElementShortName">wb_dat_o[31:0]</obj_property>
+      <obj_property name="ObjectShortName">wb_dat_o[31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/lab4_tb/dut/sram_controller_base/state" type="array">
       <obj_property name="ElementShortName">state[2:0]</obj_property>
@@ -59,6 +59,7 @@
    <wvobject fp_name="/lab4_tb/dut/sram_controller_base/sram_addr" type="array">
       <obj_property name="ElementShortName">sram_addr[19:0]</obj_property>
       <obj_property name="ObjectShortName">sram_addr[19:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
    </wvobject>
    <wvobject fp_name="/lab4_tb/dut/sram_controller_base/sram_data" type="array">
       <obj_property name="ElementShortName">sram_data[31:0]</obj_property>
@@ -79,5 +80,10 @@
    <wvobject fp_name="/lab4_tb/dut/sram_controller_base/sram_be_n" type="array">
       <obj_property name="ElementShortName">sram_be_n[3:0]</obj_property>
       <obj_property name="ObjectShortName">sram_be_n[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/lab4_tb/dut/u_sram_tester/read_compare" type="array">
+      <obj_property name="ElementShortName">read_compare[3:0]</obj_property>
+      <obj_property name="ObjectShortName">read_compare[3:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
    </wvobject>
 </wave_config>

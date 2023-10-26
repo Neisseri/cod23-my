@@ -66,18 +66,20 @@ module sram_controller #(
       sram_data_t_reg <= 1'b1;
       sram_data_o_reg <= 32'b0;
       wb_ack_o <= 1'b0;
+      wb_dat_o <= 32'b0;
       state <= STATE_IDLE;
     end else begin
       case (state)
         
         STATE_IDLE: begin
           wb_ack_o <= 1'b0;
+          wb_dat_o <= 32'b0;
           if (wb_stb_i && wb_cyc_i) begin
             if (wb_we_i) begin // write
               ram_ce_n_reg <= 1'b0;
               ram_oe_n_reg <= 1'b1;
               ram_we_n_reg <= 1'b1;
-              sram_addr <= wb_adr_i / 4;
+              sram_addr <= wb_adr_i[21:2];
               sram_be_n <= ~wb_sel_i;
               // tri-state logic
               sram_data_t_reg <= 1'b0;
@@ -87,7 +89,7 @@ module sram_controller #(
               ram_ce_n_reg <= 1'b0;
               ram_oe_n_reg <= 1'b0;
               ram_we_n_reg <= 1'b1;
-              sram_addr <= wb_adr_i / 4;
+              sram_addr <= wb_adr_i[21:2];
               sram_be_n <= ~wb_sel_i;
               // tri-state logic
               sram_data_t_reg <= 1'b1;
@@ -97,6 +99,7 @@ module sram_controller #(
         end
 
         STATE_READ: begin
+          wb_dat_o <= sram_data_i_comb;
           state <= STATE_READ_2;
         end
 
@@ -124,6 +127,7 @@ module sram_controller #(
         end
 
         STATE_DONE: begin
+          wb_ack_o <= 1'b0;
           state <= STATE_IDLE;
         end
 
