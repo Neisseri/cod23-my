@@ -126,6 +126,164 @@ module lab5_top (
   logic [ 3:0] wbm_sel_o;
   logic        wbm_we_o;
 
+  // user-defined
+  logic        top_cyc;
+  logic        top_stb;
+  logic        top_we;
+	logic [31:0] top_adr;
+	logic [ 3:0] top_sel;
+	logic        top_ack;
+	logic [31:0] top_dat_o;
+	logic [31:0] top_dat_i;
+
+  typedef enum logic [3:0] { // 状态数还不确定
+    IDLE = 0,
+
+    READ_WAIT_ACTION = 1,
+    READ_WAIT_CHECK = 2,
+    READ_DATA_ACTION = 3,
+    READ_DATA_DONE = 4,
+
+    WRITE_SRAM_ACTION = 5,
+		WRITE_SRAM_DONE = 6,
+
+		WRITE_WAIT_ACTION = 7,
+		WRITE_WAIT_CHECK = 8,
+		WRITE_DATA_ACTION = 9,
+		WRITE_DATA_DONE = 10
+  } state_t;
+
+  state_t state;
+
+	logic [31:0] addr;
+	logic [31:0] dat_tmp;
+	logic [ 3:0] counter = 4'b0;
+
+  always_ff @ (posedge sys_clk) begin
+
+		if (sys_rst == 1'b1) begin
+			
+			addr <= dip_sw;
+		
+		end else begin
+
+			case (state)
+
+				IDLE: begin
+					top_cyc <= 1'b1;
+					top_stb <= 1'b1;
+					top_adr <= 32'h1000_0005;
+					top_sel <= 4'b0010;
+					top_we <= 1'b0;
+					counter <= counter + 1;
+					state <= READ_WAIT_ACTION;
+				end
+
+				READ_WAIT_ACTION: begin // reading status register
+					if (top_ack == 1'b1) begin
+						dat_tmp <= top_dat_i;
+						top_cyc <= 1'b0;
+						top_stb <= 1'b0;
+						state <= READ_WAIT_CHECK;
+					end
+				end
+
+				READ_WAIT_CHECK: begin // check if can read new value from status reg
+					if (dat_tmp[0] == 1'b1) begin // 0005 [0]: 1 receive data
+						top_cyc <= 1'b1;
+						top_stb <= 1'b1;
+						top_adr <= 32'h1000_0000;
+						top_sel <= 4'b0001;
+						top_we <= 1'b0;
+						state <= READ_DATA_ACTION;
+					end else begin // haven't receive data
+						top_cyc <= 1'b1;
+						top_stb <= 1'b1;
+						top_adr <= 32'h1000_0005;
+						top_sel <= 4'b0010;
+						top_we <= 1'b0;
+						state <= READ_WAIT_ACTION;
+					end
+				end
+
+				READ_DATA_ACTION: begin
+					if (top_ack == 1'b1) begin
+						dat_tmp <= top_dat_i;
+						state <= READ_DATA_DONE;
+					end
+				end
+
+				READ_DATA_DONE: begin
+					state <= WRITE_SRAM_ACTION;
+				end
+
+				WRITE_SRAM_ACTION: begin
+					top_cyc <= 1'b1;
+					top_stb <= 1'b1;
+					top_adr <= addr + 4 * counter;
+					top_dat_o <= dat_tmp;
+					top_sel <= 4'b0001;
+					top_we <= 1'b1; // write in
+					state <= WRITE_SRAM_DONE;
+				end
+
+				WRITE_SRAM_DONE: begin
+					top_cyc <= 1'b1;
+					top_stb <= 1'b1;
+					top_adr <= 32'h1000_0005;
+					top_sel <= 4'b0010;
+					top_we <= 1'b0;
+					state <= WRITE_WAIT_ACTION;
+				end
+
+				WRITE_WAIT_ACTION: begin
+					if (top_ack == 1'b1) begin
+						dat_tmp <= top_dat_i;
+						top_cyc <= 1'b0;
+						top_stb <= 1'b0;
+						state <= WRITE_WAIT_CHECK;
+					end
+				end
+
+				WRITE_WAIT_CHECK: begin
+					if (dat_tmp[5] == 1'b1) begin // 0005 [5]: 0010_0000 i.e. 0x20, free to send data
+						top_cyc <= 1'b1;
+						top_stb <= 1'b1;
+						top_adr <= 32'h1000_0000;
+						top_dat_o <= dat_tmp;
+						top_sel <= 4'b0001;
+						top_we <= 1'b1;
+						state <= WRITE_DATA_ACTION;
+					end else begin // haven't receive data
+						top_cyc <= 1'b1;
+						top_stb <= 1'b1;
+						top_adr <= 32'h1000_0005;
+						top_sel <= 4'b0010;
+						top_we <= 1'b0;
+						state <= WRITE_WAIT_ACTION;
+					end
+				end
+
+				WRITE_DATA_ACTION: begin
+					if (top_ack == 1'b1) begin
+						state <= WRITE_DATA_DONE;
+					end
+				end
+
+				WRITE_DATA_DONE: begin
+					if (counter < 4'b1010) begin
+						state <= IDLE;
+					end 
+				end
+
+				default: begin
+					state <= IDLE;
+				end
+			endcase
+
+		end
+  end
+
   lab5_master #(
       .ADDR_WIDTH(32),
       .DATA_WIDTH(32)
@@ -134,6 +292,14 @@ module lab5_top (
       .rst_i(sys_rst),
 
       // TODO: 添加需要的控制信号，例如按键开关？
+      .top_adr(top_adr),
+      .top_cyc(top_cyc),
+      .top_stb(top_stb),
+      .top_we(top_we),
+			.top_sel(top_sel),
+			.top_ack(top_ack),
+			.top_dat_i(top_dat_o),
+    	.top_dat_o(top_dat_i),
 
       // wishbone master
       .wb_cyc_o(wbm_cyc_o),

@@ -51,8 +51,8 @@ module lab5_tb;
     #100;
     reset_btn = 1;
     #100;
-    reset_btn = 0;
-
+    reset_btn = 0; 
+    
     // TODO: 根据实验的操作要求，自定义下面的输入序列
     for (integer i = 0; i < 20; i = i + 1) begin
       #100;  // 等待 100ns
