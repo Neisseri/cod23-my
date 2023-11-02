@@ -43,7 +43,7 @@ module lab5_tb;
 
   initial begin
     // 在这里可以自定义测试输入序列，例如：
-    dip_sw = 32'h2;
+    dip_sw = 32'h8000_0000;
     touch_btn = 0;
     reset_btn = 0;
     push_btn = 0;

@@ -150,13 +150,15 @@ module lab5_top (
 		WRITE_WAIT_ACTION = 7,
 		WRITE_WAIT_CHECK = 8,
 		WRITE_DATA_ACTION = 9,
-		WRITE_DATA_DONE = 10
+		WRITE_DATA_DONE = 10,
+
+    DONE = 11
   } state_t;
 
   state_t state;
 
 	logic [31:0] addr;
-	logic [31:0] dat_tmp;
+	logic [31:0] dat_tmp = 32'b0;
 	logic [ 3:0] counter = 4'b0;
 
   always_ff @ (posedge sys_clk) begin
@@ -189,7 +191,7 @@ module lab5_top (
 				end
 
 				READ_WAIT_CHECK: begin // check if can read new value from status reg
-					if (dat_tmp[0] == 1'b1) begin // 0005 [0]: 1 receive data
+					if (dat_tmp[8] == 1'b1) begin // 0005 [0]: 1 receive data
 						top_cyc <= 1'b1;
 						top_stb <= 1'b1;
 						top_adr <= 32'h1000_0000;
@@ -208,7 +210,9 @@ module lab5_top (
 
 				READ_DATA_ACTION: begin
 					if (top_ack == 1'b1) begin
-						dat_tmp <= top_dat_i;
+						dat_tmp <= top_dat_i[7:0];
+            top_cyc <= 1'b0;
+						top_stb <= 1'b0;
 						state <= READ_DATA_DONE;
 					end
 				end
@@ -220,7 +224,7 @@ module lab5_top (
 				WRITE_SRAM_ACTION: begin
 					top_cyc <= 1'b1;
 					top_stb <= 1'b1;
-					top_adr <= addr + 4 * counter;
+					top_adr <= addr + 4 * (counter - 1);
 					top_dat_o <= dat_tmp;
 					top_sel <= 4'b0001;
 					top_we <= 1'b1; // write in
@@ -246,7 +250,7 @@ module lab5_top (
 				end
 
 				WRITE_WAIT_CHECK: begin
-					if (dat_tmp[5] == 1'b1) begin // 0005 [5]: 0010_0000 i.e. 0x20, free to send data
+					if (dat_tmp[13] == 1'b1) begin // 0005 [5]: 0010_0000 i.e. 0x20, free to send data
 						top_cyc <= 1'b1;
 						top_stb <= 1'b1;
 						top_adr <= 32'h1000_0000;
@@ -273,8 +277,18 @@ module lab5_top (
 				WRITE_DATA_DONE: begin
 					if (counter < 4'b1010) begin
 						state <= IDLE;
-					end 
+          end else begin
+            top_cyc <= 1'b0;
+            top_stb <= 1'b0;
+            top_adr <= 32'h0;
+            top_sel <= 4'b0000;
+            top_we <= 1'b0;
+            state <= DONE;
+          end
 				end
+
+        DONE: begin
+        end
 
 				default: begin
 					state <= IDLE;
