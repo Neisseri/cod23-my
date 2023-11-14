@@ -268,17 +268,41 @@ module thinpad_top (
   reg [31:0] pc_now_reg;
   reg [31:0] inst_reg;
 
+  reg [31:0] alu_operand1_o;
+  reg [31:0] alu_operand2_o;
+  reg [ 3:0] alu_op_o;
+  reg [31:0] alu_result_i;
+
   always_comb begin
-    
     case (state)
-
       STATE_IF: begin
-        
+        top_adr_o = pc_reg;
+        top_cyc_o = 1'b1;
+        alu_operand1_o = pc_reg;
+        alu_operand2_o = 32'h0000_0004;
+        alu_op_o = 4'b0001; // ALU_ADD
       end
-
     endcase
-
   end
+
+  always_ff @ (posedge sys_clk) begin
+    case (state)
+      STATE_IF: begin
+        inst_reg <= top_dat_i;
+        pc_now_reg <= pc_reg;
+        if (wb_ack_i) begin
+          pc_reg <= alu_result_i; // hold `addr` when wishbone request
+          state <= STATE_ID;
+      end
+    endcase
+  end
+
+  alu_32 u_alu_32 (
+    .a  (alu_operand1_o),
+    .b  (alu_operand2_o),
+    .op (alu_op_o),
+    .y  (alu_result_i)
+  );
 
   // Lab 6 end
 
