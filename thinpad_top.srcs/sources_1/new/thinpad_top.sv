@@ -152,12 +152,17 @@ module thinpad_top (
 
   //       [14:12] [6:0]
   //  LUI:         0110111
+
   //  BEQ:     000 1100011
+
   //   LB:     000 0000011
+
   //   SB:     000 0100011
-  //   SW:     010 0100011
+  //   SW:     010 0100011 √
+
   // ADDI:     000 0010011 √
-  // ANDI:     111 0010011 √        
+  // ANDI:     111 0010011 √
+
   //  ADD:     000 0110011 √
 
   always_comb begin
@@ -166,6 +171,10 @@ module thinpad_top (
       STATE_IF: begin
         top_adr_o = pc_reg;
         top_cyc_o = 1'b1;
+        top_stb_o = 1'b1;
+        top_sel_o = 4'b1111;
+        top_we_o = 1'b0; // read
+
         alu_operand1_o = pc_reg;
         alu_operand2_o = 32'h0000_0004;
         alu_op_o = 4'b0001; // PC <- PC + 4
@@ -178,6 +187,11 @@ module thinpad_top (
         end else if (inst_reg[6:0] == 7'b0110011) begin // ADD
           rf_raddr_a_o = inst_reg[19:15]; // rs1
           rf_raddr_b_o = inst_reg[24:20]; // rs2
+        end else if (inst_reg[6:0] == 7'b0100011 && inst_reg[14:12] == 3'b010) begin // SW
+          rf_raddr_a_o = inst_reg[19:15]; // rs1
+          rf_raddr_b_o = inst_reg[24:20]; // rs2
+          imm = inst_reg[11:7] + (inst_reg[31:25] << 5);
+          //             [4:0]   [11:5]
         end
       end
 
@@ -188,6 +202,19 @@ module thinpad_top (
           alu_op_o = 4'b0001; // ALU_ADD
         end else if (inst_reg[6:0] == 7'b0010011 && inst_reg[14:12] == 3'b111) begin // ANDI
           alu_op_o = 4'b0011; // ALU_AND
+        end else if (inst_reg[6:0] == 7'b0100011 && inst_reg[14:12] == 3'b010) begin // SW
+          alu_op_o = 4'b0001; // ALU_ADD
+        end
+      end
+
+      STATE_MEM: begin
+        if (inst_reg[6:0] == 7'b0100011 && inst_reg[14:12] == 3'b010) begin // SW
+          top_adr_o = alu_result_i; // [rs1] + imm
+          top_dat_o = rf_rdata_b_i; // rs2
+          top_cyc_o = 1'b1;
+          top_stb_o = 1'b1;
+          top_we_o = 1'b1; // write
+          top_sel_o = 4'b1111;
         end
       end
 
@@ -210,6 +237,7 @@ module thinpad_top (
       STATE_IF: begin
         inst_reg <= top_dat_i;
         top_cyc_o <= 1'b0;
+        top_stb_o <= 1'b0;
         pc_now_reg <= pc_reg; // pc_now_reg: this instr, pc_reg: next instr
         if (wb_ack_i) begin // wishbone ack: PC + 4 get
           pc_reg <= alu_result_i; // hold `addr` when wishbone request
@@ -224,6 +252,9 @@ module thinpad_top (
         end else if (inst_reg[6:0] == 7'b0110011) begin // ADD
           operand1_reg <= rf_rdata_a_i; // rs1
           operand2_reg <= rf_rdata_b_i; // rs2
+        end else if (inst_reg[6:0] == 7'b0100011 && inst_reg[14:12] == 3'b010) begin // SW
+          operand1_reg <= rf_rdata_a_i; // rs1
+          operand2_reg <= $signed(imm); // signed extension
         end
         state <= STATE_EXE;
       end
@@ -232,7 +263,13 @@ module thinpad_top (
         if (inst_reg[6:0] == 7'b0010011 || inst_reg[6:0] == 7'b0110011) begin // ADDI & ANDI & ADD
           rf_writeback_reg <= alu_result_i;
           state <= STATE_WB;
+        end else if (inst_reg[6:0] == 7'b0100011 && inst_reg[14:12] == 3'b010) begin // SW
+          state <= STATE_MEM;
         end
+      end
+
+      STATE_MEM: begin
+        state <= STATE_IF;
       end
 
       STATE_WB: begin
