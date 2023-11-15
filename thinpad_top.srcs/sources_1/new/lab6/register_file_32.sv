@@ -5,8 +5,8 @@ module register_file_32 (
     input wire clk,
     input wire reset,
 
-    input wire [4 : 0] waddr, // writing address
-    input wire [31 : 0] wdata, // writing data
+    input wire [ 4:0] waddr, // writing address
+    input wire [31:0] wdata, // writing data
 
     input wire we, // enable signal of writing
 
@@ -16,16 +16,16 @@ module register_file_32 (
     output reg [31:0] rdata_b // register data of reading port 'b'
 );
 
-    reg[UNIT_SIZE - 1 : 0] mem[SIZE];
+    reg[31:0] mem[32];
 
     // writing port
     always_ff @(posedge clk) begin
         if (reset) begin
             for (integer i = 0; i < 32; i++) begin
-                mem[i] <= 16'b0;
+                mem[i] <= 32'b0;
             end
-            rdata_a <= 16'b0;
-            rdata_b <= 16'b0;
+            rdata_a <= 32'b0;
+            rdata_b <= 32'b0;
         end else begin
             rdata_a <= mem[raddr_a];
             rdata_b <= mem[raddr_b];
