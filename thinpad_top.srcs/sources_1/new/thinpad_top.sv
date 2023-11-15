@@ -122,7 +122,7 @@ module thinpad_top (
 
   state_t state;
 
-  reg [31:0] pc_reg;
+  reg [31:0] pc_reg = 32'h8000_0000;
   reg [31:0] pc_now_reg;
   reg [31:0] inst_reg;
 
@@ -141,9 +141,7 @@ module thinpad_top (
   logic [31:0] rf_wdata_o;
   logic rf_we_o;
 
-  // TODO: imm gen
-  logic [15:0] imm_gen_inst_o;
-  logic [31:0] imm_gen_imm_i;
+  logic [31:0] imm;
 
   // ID stage
   reg [31:0] operand1_reg;
@@ -152,37 +150,53 @@ module thinpad_top (
   // EXE stage
   reg [31:0] rf_writeback_reg;
 
+  //       [14:12] [6:0]
+  //  LUI:         0110111
+  //  BEQ:     000 1100011
+  //   LB:     000 0000011
+  //   SB:     000 0100011
+  //   SW:     010 0100011
+  // ADDI:     000 0010011 √
+  // ANDI:     111 0010011 √        
+  //  ADD:     000 0110011 √
+
   always_comb begin
     case (state)
+
       STATE_IF: begin
         top_adr_o = pc_reg;
         top_cyc_o = 1'b1;
         alu_operand1_o = pc_reg;
         alu_operand2_o = 32'h0000_0004;
-        alu_op_o = 4'b0001; // ALU_ADD
+        alu_op_o = 4'b0001; // PC <- PC + 4
       end
 
       STATE_ID: begin
-        rf_raddr_a_o = inst_reg[19:15]; // rs1
-        rf_raddr_b_o = inst_reg[24:20]; // rs2
-        imm_gen_inst_o = inst_reg[31:16]; // imm
-        if (inst_reg[2:0] == 3'b010) begin // inst is type I
-          // TODO: imm_gen_type_o = TYPE_I;
+        if (inst_reg[6:0] == 7'b0010011) begin // ADDI & ANDI
+          rf_raddr_a_o = inst_reg[19:15]; // rs1
+          imm = inst_reg[31:20];
+        end else if (inst_reg[6:0] == 7'b0110011) begin // ADD
+          rf_raddr_a_o = inst_reg[19:15]; // rs1
+          rf_raddr_b_o = inst_reg[24:20]; // rs2
         end
       end
 
       STATE_EXE: begin
         alu_operand1_o = operand1_reg;
         alu_operand2_o = operand2_reg;
-        if (inst_reg[6:0] == 7'b0010011) begin // ADDI
+        if ((inst_reg[6:0] == 7'b0010011 && inst_reg[14:12] == 3'b000) || inst_reg[6:0] == 7'b0110011) begin // ADDI & ADD
           alu_op_o = 4'b0001; // ALU_ADD
+        end else if (inst_reg[6:0] == 7'b0010011 && inst_reg[14:12] == 3'b111) begin // ANDI
+          alu_op_o = 4'b0011; // ALU_AND
         end
       end
 
       STATE_WB: begin
-        rf_we_o = 1'b1;
-        rf_wdata_o = rf_writeback_reg;
-        rf_waddr_o = inst_reg[11:7]; // rd
+        if (inst_reg[6:0] == 7'b0010011 || inst_reg[6:0] == 7'b0110011) begin // ADDI & ANDI & ADD
+          rf_we_o = 1'b1;
+          rf_wdata_o = rf_writeback_reg;
+          rf_waddr_o = inst_reg[11:7]; // rd
+        end
       end
 
       default: begin
@@ -192,25 +206,30 @@ module thinpad_top (
 
   always_ff @ (posedge sys_clk) begin
     case (state)
+
       STATE_IF: begin
         inst_reg <= top_dat_i;
-        pc_now_reg <= pc_reg;
-        if (wb_ack_i) begin
+        top_cyc_o <= 1'b0;
+        pc_now_reg <= pc_reg; // pc_now_reg: this instr, pc_reg: next instr
+        if (wb_ack_i) begin // wishbone ack: PC + 4 get
           pc_reg <= alu_result_i; // hold `addr` when wishbone request
           state <= STATE_ID;
         end
       end
 
       STATE_ID: begin
-        if (inst_reg[6:0] == 7'b0010011) begin // ADDI
-          operand1_reg <= rf_rdata_a_i;
-          operand2_reg <= imm_gen_imm_i;
+        if (inst_reg[6:0] == 7'b0010011) begin // ADDI $ ANDI
+          operand1_reg <= rf_rdata_a_i; // rs1
+          operand2_reg <= imm; // rd
+        end else if (inst_reg[6:0] == 7'b0110011) begin // ADD
+          operand1_reg <= rf_rdata_a_i; // rs1
+          operand2_reg <= rf_rdata_b_i; // rs2
         end
         state <= STATE_EXE;
       end
 
       STATE_EXE: begin
-        if (inst_reg[6:0] == 7'b0010011) begin // ADDI
+        if (inst_reg[6:0] == 7'b0010011 || inst_reg[6:0] == 7'b0110011) begin // ADDI & ANDI & ADD
           rf_writeback_reg <= alu_result_i;
           state <= STATE_WB;
         end

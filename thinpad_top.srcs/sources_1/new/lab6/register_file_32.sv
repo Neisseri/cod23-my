@@ -18,17 +18,18 @@ module register_file_32 (
 
     reg[31:0] mem[32];
 
+    always_comb begin
+        rdata_a = mem[raddr_a];
+        rdata_b = mem[raddr_b];
+    end
+
     // writing port
     always_ff @(posedge clk) begin
         if (reset) begin
             for (integer i = 0; i < 32; i++) begin
                 mem[i] <= 32'b0;
             end
-            rdata_a <= 32'b0;
-            rdata_b <= 32'b0;
         end else begin
-            rdata_a <= mem[raddr_a];
-            rdata_b <= mem[raddr_b];
             if (we == 1'b1 && waddr != 0) begin
                 mem[waddr] <= wdata;
             end
