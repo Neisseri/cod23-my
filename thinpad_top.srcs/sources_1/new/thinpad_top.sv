@@ -428,7 +428,7 @@ module thinpad_top (
 
         if (inst_reg[6:0] == 7'b0100011 && inst_reg[14:12] == 3'b010) begin // SW
 
-          rf_raddr_b_o = 5'b00000;
+          rf_raddr_b_o = inst_reg[24:20]; // rs2
 
           top_adr_o = sram_addr_reg; // BaseRAM address: [rs1] + imm
           // note that in RAM, an address represents 32 bits
@@ -463,7 +463,7 @@ module thinpad_top (
           top_dat_o = 32'h0000_0000;
         end else begin
           rf_raddr_b_o = 5'b00000;
-          
+
           top_adr_o = 32'h0000_0000;
           top_dat_o = 32'h0000_0000;
           top_cyc_o = 1'b0;
