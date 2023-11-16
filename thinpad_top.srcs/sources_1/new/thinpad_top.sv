@@ -294,19 +294,20 @@ module thinpad_top (
     case (state)
 
       STATE_IF: begin
-        top_adr_o = pc_reg;
         top_cyc_o = 1'b1;
         top_stb_o = 1'b1;
+        top_adr_o = pc_reg;
+        top_dat_o = 32'h0000_0000;
         top_sel_o = 4'b1111;
         top_we_o = 1'b0; // read
-        // to avoid latch
-        top_dat_o = 32'h0000_0000;
+        
         imm = 32'h0000_0000;
-        rf_we_o = 1'b0;
-        rf_wdata_o = 32'h0000_0000;
-        rf_waddr_o = 5'b00000;
+        
         rf_raddr_a_o = 5'b00000;
         rf_raddr_b_o = 5'b00000;
+        rf_waddr_o = 5'b00000;
+        rf_wdata_o = 32'h0000_0000;
+        rf_we_o = 1'b0;
 
         alu_operand1_o = pc_reg;
         alu_operand2_o = 32'h0000_0004;
@@ -315,94 +316,96 @@ module thinpad_top (
 
       STATE_ID: begin
         // to avoid latch
-        top_adr_o = 32'h0000_0000;
         top_cyc_o = 1'b0;
         top_stb_o = 1'b0;
+        top_adr_o = 32'h0000_0000;
+        top_dat_o = 32'h0000_0000;
         top_sel_o = 4'b0000;
         top_we_o = 1'b0;
-        top_dat_o = 32'h0000_0000;
+        
         alu_operand1_o = 32'h0000_0000;
         alu_operand2_o = 32'h0000_0000;
         alu_op_o = 4'b0000;
 
         if (inst_reg[6:0] == 7'b0010011) begin // ADDI & ANDI
-          rf_raddr_a_o = inst_reg[19:15]; // rs1
           imm = $signed(inst_reg[31:20]);
-          // to avoid latch
-          rf_we_o = 1'b0;
-          rf_wdata_o = 32'h0000_0000;
-          rf_waddr_o = 5'b00000;
+
+          rf_raddr_a_o = inst_reg[19:15]; // rs1
           rf_raddr_b_o = 5'b00000;
-        end else if (inst_reg[6:0] == 7'b0110011) begin // ADD
-          rf_raddr_a_o = inst_reg[19:15]; // rs1
-          rf_raddr_b_o = inst_reg[24:20]; // rs2
-          // to avoid latch
-          imm = 32'h0000_0000;
-          // to avoid latch
-          rf_we_o = 1'b0;
-          rf_wdata_o = 32'h0000_0000;
           rf_waddr_o = 5'b00000;
-        end else if (inst_reg[6:0] == 7'b0100011) begin // SW & SB
+          rf_wdata_o = 32'h0000_0000;
+          rf_we_o = 1'b0;
+        end else if (inst_reg[6:0] == 7'b0110011) begin // ADD
+          imm = 32'h0000_0000;
+
           rf_raddr_a_o = inst_reg[19:15]; // rs1
           rf_raddr_b_o = inst_reg[24:20]; // rs2
+          rf_waddr_o = 5'b00000;
+          rf_wdata_o = 32'h0000_0000;
+          rf_we_o = 1'b0;
+        end else if (inst_reg[6:0] == 7'b0100011) begin // SW & SB
           imm = $signed({inst_reg[31:25], inst_reg[11:7]});
           //             [4:0]   [11:5]
-          // to avoid latch
-          rf_we_o = 1'b0;
-          rf_wdata_o = 32'h0000_0000;
-          rf_waddr_o = 5'b00000;
-        end else if (inst_reg[6:0] == 7'b0000011) begin // LB
-          rf_raddr_a_o = inst_reg[19:15]; // rs1
-          imm = $signed(inst_reg[31:20]);
-          // to avoid latch
-          rf_we_o = 1'b0;
-          rf_wdata_o = 32'h0000_0000;
-          rf_waddr_o = 5'b00000;
-          rf_raddr_b_o = 5'b00000;
-        end else if (inst_reg[6:0] == 7'b0110111) begin // LUI
-          imm = {inst_reg[31:12], 12'h000};
-          // to avoid latch
-          rf_we_o = 1'b0;
-          rf_wdata_o = 32'h0000_0000;
-          rf_waddr_o = 5'b00000;
-          rf_raddr_a_o = 5'b00000;
-          rf_raddr_b_o = 5'b00000;
-        end else if (inst_reg[6:0] == 7'b1100011) begin // BEQ
+
           rf_raddr_a_o = inst_reg[19:15]; // rs1
           rf_raddr_b_o = inst_reg[24:20]; // rs2
-          imm = $signed({inst_reg[31], inst_reg[7], inst_reg[30:25], inst_reg[11:8], 1'b0});
-          // to avoid latch
-          rf_we_o = 1'b0;
-          rf_wdata_o = 32'h0000_0000;
           rf_waddr_o = 5'b00000;
-        end else begin
-          // to avoid latch
-          imm = 32'h0000_0000;
-          rf_we_o = 1'b0;
           rf_wdata_o = 32'h0000_0000;
+          rf_we_o = 1'b0;
+        end else if (inst_reg[6:0] == 7'b0000011) begin // LB
+          imm = $signed(inst_reg[31:20]);
+
+          rf_raddr_a_o = inst_reg[19:15]; // rs1
+          rf_raddr_b_o = 5'b00000;
           rf_waddr_o = 5'b00000;
+          rf_wdata_o = 32'h0000_0000;
+          rf_we_o = 1'b0;
+        end else if (inst_reg[6:0] == 7'b0110111) begin // LUI
+          imm = {inst_reg[31:12], 12'h000};
+          
           rf_raddr_a_o = 5'b00000;
           rf_raddr_b_o = 5'b00000;
+          rf_waddr_o = 5'b00000;
+          rf_wdata_o = 32'h0000_0000;
+          rf_we_o = 1'b0;
+        end else if (inst_reg[6:0] == 7'b1100011) begin // BEQ
+          imm = $signed({inst_reg[31], inst_reg[7], inst_reg[30:25], inst_reg[11:8], 1'b0});
+          
+          rf_raddr_a_o = inst_reg[19:15]; // rs1
+          rf_raddr_b_o = inst_reg[24:20]; // rs2
+          rf_waddr_o = 5'b00000;
+          rf_wdata_o = 32'h0000_0000;
+          rf_we_o = 1'b0;
+        end else begin
+          imm = 32'h0000_0000;
+
+          rf_raddr_a_o = 5'b00000;
+          rf_raddr_b_o = 5'b00000;
+          rf_waddr_o = 5'b00000;
+          rf_wdata_o = 32'h0000_0000;
+          rf_we_o = 1'b0;
         end
       end
 
       STATE_EXE: begin
-        // to avoid latch
-        top_adr_o = 32'h0000_0000;
         top_cyc_o = 1'b0;
         top_stb_o = 1'b0;
+        top_adr_o = 32'h0000_0000;
+        top_dat_o = 32'h0000_0000;
         top_sel_o = 4'b0000;
         top_we_o = 1'b0;
-        top_dat_o = 32'h0000_0000;
+        
         imm = 32'h0000_0000;
-        rf_we_o = 1'b0;
-        rf_wdata_o = 32'h0000_0000;
-        rf_waddr_o = 5'b00000;
+
         rf_raddr_a_o = 5'b00000;
         rf_raddr_b_o = 5'b00000;
-
+        rf_waddr_o = 5'b00000;
+        rf_wdata_o = 32'h0000_0000;
+        rf_we_o = 1'b0;
+        
         alu_operand1_o = operand1_reg;
         alu_operand2_o = operand2_reg;
+
         if ((inst_reg[6:0] == 7'b0010011 && inst_reg[14:12] == 3'b000) || inst_reg[6:0] == 7'b0110011) begin // ADDI & ADD
           alu_op_o = 4'b0001; // ALU_ADD
         end else if (inst_reg[6:0] == 7'b0010011 && inst_reg[14:12] == 3'b111) begin // ANDI
@@ -410,154 +413,149 @@ module thinpad_top (
         end else if (inst_reg[6:0] == 7'b0100011 || inst_reg[6:0] == 7'b0000011) begin // SW & SB & LB
           alu_op_o = 4'b0001; // ALU_ADD
         end else begin
-          // to avoid latch
           alu_op_o = 4'b0000;
         end
       end
 
       STATE_MEM: begin
-        // to avoid latch
+        imm = 32'h0000_0000;
+
+        rf_raddr_a_o = 5'b00000;
+        rf_waddr_o = 5'b00000;
+        rf_wdata_o = 32'h0000_0000;
+        rf_we_o = 1'b0;
+
         alu_operand1_o = 32'h0000_0000;
         alu_operand2_o = 32'h0000_0000;
         alu_op_o = 4'b0000;
-        imm = 32'h0000_0000;
-        rf_we_o = 1'b0;
-        rf_wdata_o = 32'h0000_0000;
-        rf_waddr_o = 5'b00000;
-        rf_raddr_a_o = 5'b00000;
 
         if (inst_reg[6:0] == 7'b0100011 && inst_reg[14:12] == 3'b010) begin // SW
-
-          rf_raddr_b_o = inst_reg[24:20]; // rs2
-
+          top_cyc_o = 1'b1;
+          top_stb_o = 1'b1;
           top_adr_o = sram_addr_reg; // BaseRAM address: [rs1] + imm
           // note that in RAM, an address represents 32 bits
           top_dat_o = rf_rdata_b_i; // rs2
           top_sel_o = 4'b1111;
-
-          top_cyc_o = 1'b1;
-          top_stb_o = 1'b1;
           top_we_o = 1'b1; // write
-        end else if (inst_reg[6:0] == 7'b0100011 && inst_reg[14:12] == 3'b000) begin // SB
 
           rf_raddr_b_o = inst_reg[24:20]; // rs2
-
+        end else if (inst_reg[6:0] == 7'b0100011 && inst_reg[14:12] == 3'b000) begin // SB
+          top_cyc_o = 1'b1;
+          top_stb_o = 1'b1;
           top_adr_o = sram_addr_reg; // [rs1] + imm
           top_dat_o = rf_rdata_b_i[7:0]; // rs2
           top_sel_o = 4'b0001;
-
-          top_cyc_o = 1'b1;
-          top_stb_o = 1'b1;
           top_we_o = 1'b1; // write
+
+          rf_raddr_b_o = inst_reg[24:20]; // rs2
         end else if (inst_reg[6:0] == 7'b0000011) begin // LB
-
-          rf_raddr_b_o = 5'b00000;
-
-          top_adr_o = sram_addr_reg; // [rs1] + imm
-          top_sel_o = 4'b0001;
-          
           top_cyc_o = 1'b1;
           top_stb_o = 1'b1;
+          top_adr_o = sram_addr_reg; // [rs1] + imm
+          top_dat_o = 32'h0000_0000;
+          top_sel_o = 4'b0001;
           top_we_o = 1'b0; // read
-          // to avoid latch
-          top_dat_o = 32'h0000_0000;
-        end else begin
-          rf_raddr_b_o = 5'b00000;
 
-          top_adr_o = 32'h0000_0000;
-          top_dat_o = 32'h0000_0000;
+          rf_raddr_b_o = 5'b00000;
+        end else begin
           top_cyc_o = 1'b0;
           top_stb_o = 1'b0;
+          top_adr_o = 32'h0000_0000;
+          top_dat_o = 32'h0000_0000;
           top_sel_o = 4'b0000;
           top_we_o = 1'b0;
+
+          rf_raddr_b_o = 5'b00000;
         end
       end
 
       STATE_WB: begin
-        // to avoid latch
-        top_adr_o = 32'h0000_0000;
         top_cyc_o = 1'b0;
         top_stb_o = 1'b0;
+        top_adr_o = 32'h0000_0000;
+        top_dat_o = 32'h0000_0000;
         top_sel_o = 4'b0000;
         top_we_o = 1'b0;
-        top_dat_o = 32'h0000_0000;
+        
         alu_operand1_o = 32'h0000_0000;
         alu_operand2_o = 32'h0000_0000;
         alu_op_o = 4'b0000;
 
         if (inst_reg[6:0] == 7'b0010011 || inst_reg[6:0] == 7'b0110011) begin // ADDI & ANDI & ADD
-          rf_we_o = 1'b1;
-          rf_wdata_o = rf_writeback_reg;
-          rf_waddr_o = inst_reg[11:7]; // rd
-          // to avoid latch
           imm = 32'h0000_0000;
-          rf_raddr_a_o = 5'b00000;
-          rf_raddr_b_o = 5'b00000;
-        end else if (inst_reg[6:0] == 7'b0000011) begin // LB
-          rf_we_o = 1'b1;
-          rf_wdata_o = rf_writeback_reg;
-          rf_waddr_o = inst_reg[11:7]; // rd
-          
-          // to avoid latch
-          imm = 32'h0000_0000;
-          rf_raddr_a_o = 5'b00000;
-          rf_raddr_b_o = 5'b00000;
-        end else if (inst_reg[6:0] == 7'b0110111) begin // LUI
-          rf_we_o = 1'b1;
-          rf_wdata_o = imm;
-          rf_waddr_o = inst_reg[11:7]; // rd
 
-          // to avoid latch
-          imm = {inst_reg[31:12], 12'h000};
           rf_raddr_a_o = 5'b00000;
           rf_raddr_b_o = 5'b00000;
-        end else begin
-          // to avoid latch
+          rf_waddr_o = inst_reg[11:7]; // rd
+          rf_wdata_o = rf_writeback_reg;
+          rf_we_o = 1'b1;
+        end else if (inst_reg[6:0] == 7'b0000011) begin // LB
           imm = 32'h0000_0000;
-          rf_we_o = 1'b0;
-          rf_wdata_o = 32'h0000_0000;
-          rf_waddr_o = 5'b00000;
+          
           rf_raddr_a_o = 5'b00000;
           rf_raddr_b_o = 5'b00000;
+          rf_waddr_o = inst_reg[11:7]; // rd
+          rf_wdata_o = rf_writeback_reg;
+          rf_we_o = 1'b1;
+        end else if (inst_reg[6:0] == 7'b0110111) begin // LUI
+          imm = {inst_reg[31:12], 12'h000};
+
+          rf_raddr_a_o = 5'b00000;
+          rf_raddr_b_o = 5'b00000;
+          rf_waddr_o = inst_reg[11:7]; // rd
+          rf_wdata_o = imm;
+          rf_we_o = 1'b1;
+        end else begin
+          imm = 32'h0000_0000;
+
+          rf_raddr_a_o = 5'b00000;
+          rf_raddr_b_o = 5'b00000;
+          rf_waddr_o = 5'b00000;
+          rf_wdata_o = 32'h0000_0000;
+          rf_we_o = 1'b0;
         end
       end
 
       STATE_END: begin
-        // to avoid latch
-        top_adr_o = 32'h0000_0000;
         top_cyc_o = 1'b0;
         top_stb_o = 1'b0;
+        top_adr_o = 32'h0000_0000;
+        top_dat_o = 32'h0000_0000;
         top_sel_o = 4'b0000;
         top_we_o = 1'b0;
-        top_dat_o = 32'h0000_0000;
+        
+        imm = 32'h0000_0000;
+
+        rf_raddr_a_o = 5'b00000;
+        rf_raddr_b_o = 5'b00000;
+        rf_waddr_o = 5'b00000;
+        rf_wdata_o = 32'h0000_0000;
+        rf_we_o = 1'b0;
+        
         alu_operand1_o = 32'h0000_0000;
         alu_operand2_o = 32'h0000_0000;
         alu_op_o = 4'b0000;
-        imm = 32'h0000_0000;
-        rf_we_o = 1'b0;
-        rf_wdata_o = 32'h0000_0000;
-        rf_waddr_o = 5'b00000;
-        rf_raddr_a_o = 5'b00000;
-        rf_raddr_b_o = 5'b00000;
       end
 
       default: begin
-        // to avoid latch
-        top_adr_o = 32'h0000_0000;
         top_cyc_o = 1'b0;
         top_stb_o = 1'b0;
+        top_adr_o = 32'h0000_0000;
+        top_dat_o = 32'h0000_0000;
         top_sel_o = 4'b0000;
         top_we_o = 1'b0;
-        top_dat_o = 32'h0000_0000;
+        
+        imm = 32'h0000_0000;
+
+        rf_raddr_a_o = 5'b00000;
+        rf_raddr_b_o = 5'b00000;
+        rf_waddr_o = 5'b00000;
+        rf_wdata_o = 32'h0000_0000;
+        rf_we_o = 1'b0;
+        
         alu_operand1_o = 32'h0000_0000;
         alu_operand2_o = 32'h0000_0000;
         alu_op_o = 4'b0000;
-        imm = 32'h0000_0000;
-        rf_we_o = 1'b0;
-        rf_wdata_o = 32'h0000_0000;
-        rf_waddr_o = 5'b00000;
-        rf_raddr_a_o = 5'b00000;
-        rf_raddr_b_o = 5'b00000;
       end
     endcase
   end
