@@ -425,9 +425,11 @@ module thinpad_top (
         rf_wdata_o = 32'h0000_0000;
         rf_waddr_o = 5'b00000;
         rf_raddr_a_o = 5'b00000;
-        rf_raddr_b_o = 5'b00000;
 
         if (inst_reg[6:0] == 7'b0100011 && inst_reg[14:12] == 3'b010) begin // SW
+
+          rf_raddr_b_o = 5'b00000;
+
           top_adr_o = sram_addr_reg; // BaseRAM address: [rs1] + imm
           // note that in RAM, an address represents 32 bits
           top_dat_o = rf_rdata_b_i; // rs2
@@ -437,6 +439,9 @@ module thinpad_top (
           top_stb_o = 1'b1;
           top_we_o = 1'b1; // write
         end else if (inst_reg[6:0] == 7'b0100011 && inst_reg[14:12] == 3'b000) begin // SB
+
+          rf_raddr_b_o = inst_reg[24:20]; // rs2
+
           top_adr_o = sram_addr_reg; // [rs1] + imm
           top_dat_o = rf_rdata_b_i[7:0]; // rs2
           top_sel_o = 4'b0001;
@@ -445,6 +450,9 @@ module thinpad_top (
           top_stb_o = 1'b1;
           top_we_o = 1'b1; // write
         end else if (inst_reg[6:0] == 7'b0000011) begin // LB
+
+          rf_raddr_b_o = 5'b00000;
+
           top_adr_o = sram_addr_reg; // [rs1] + imm
           top_sel_o = 4'b0001;
           
@@ -454,7 +462,8 @@ module thinpad_top (
           // to avoid latch
           top_dat_o = 32'h0000_0000;
         end else begin
-          // to avoid latch
+          rf_raddr_b_o = 5'b00000;
+          
           top_adr_o = 32'h0000_0000;
           top_dat_o = 32'h0000_0000;
           top_cyc_o = 1'b0;
