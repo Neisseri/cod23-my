@@ -111,18 +111,6 @@ module thinpad_top (
     end
   end
 
-  // 不使用内存、串口时，禁用其使能信号
-  assign base_ram_ce_n = 1'b1;
-  assign base_ram_oe_n = 1'b1;
-  assign base_ram_we_n = 1'b1;
-
-  assign ext_ram_ce_n = 1'b1;
-  assign ext_ram_oe_n = 1'b1;
-  assign ext_ram_we_n = 1'b1;
-
-  assign uart_rdn = 1'b1;
-  assign uart_wrn = 1'b1;
-
   // 数码管连接关系示意图，dpy1 同理
   // p=dpy0[0] // ---a---
   // c=dpy0[1] // |     |
@@ -247,7 +235,8 @@ module thinpad_top (
     STATE_ID,
     STATE_EXE,
     STATE_MEM,
-    STATE_WB
+    STATE_WB,
+    STATE_END
   } state_t;
 
   state_t state;
@@ -314,6 +303,8 @@ module thinpad_top (
       end
 
       STATE_ID: begin
+        top_cyc_o = 1'b0;
+        top_stb_o = 1'b0;
         if (inst_reg[6:0] == 7'b0010011) begin // ADDI & ANDI
           rf_raddr_a_o = inst_reg[19:15]; // rs1
           imm = $signed(inst_reg[31:20]);
@@ -393,82 +384,97 @@ module thinpad_top (
         end
       end
 
+      STATE_END: begin
+        top_cyc_o = 1'b0;
+        top_stb_o = 1'b0;
+      end
+
       default: begin
       end
     endcase
   end
 
   always_ff @ (posedge sys_clk) begin
-    case (state)
+    
+    if (reset_btn) begin
+      state <= STATE_IF;
+    end else begin
+      case (state)
 
-      STATE_IF: begin
-        if (top_ack_i == 1'b1) begin // reading inst finished
-          inst_reg <= top_dat_i;
-          // top_cyc_o <= 1'b0;
-          // top_stb_o <= 1'b0;
-
-          pc_now_reg <= pc_reg; // pc_now_reg: this instr, pc_reg: next instr
-          pc_reg <= alu_result_i; // hold `addr` when wishbone request
-          state <= STATE_ID;
-        end
-      end
-
-      STATE_ID: begin
-        if (inst_reg[6:0] == 7'b0010011) begin // ADDI $ ANDI
-          operand1_reg <= rf_rdata_a_i; // rs1
-          operand2_reg <= imm; // imm
-          state <= STATE_EXE;
-        end else if (inst_reg[6:0] == 7'b0110011) begin // ADD
-          operand1_reg <= rf_rdata_a_i; // rs1
-          operand2_reg <= rf_rdata_b_i; // rs2
-          state <= STATE_EXE;
-        end else if (inst_reg[6:0] == 7'b0100011) begin // SW & SB
-          operand1_reg <= rf_rdata_a_i; // rs1
-          operand2_reg <= imm; // signed extension
-          state <= STATE_EXE;
-        end else if (inst_reg[6:0] == 7'b0000011) begin // LB
-          operand1_reg <= rf_rdata_a_i; // rs1
-          operand2_reg <= imm;
-          state <= STATE_EXE;
-        end else if (inst_reg[6:0] == 7'b0110111) begin // LUI
-          state <= STATE_WB;
-        end else if (inst_reg[6:0] == 7'b1100011) begin // BEQ
-          if (rf_rdata_a_i == rf_rdata_b_i) begin
-            pc_reg <= pc_now_reg + imm;
-          end
-          state <= STATE_IF;
-        end
-      end
-
-      STATE_EXE: begin
-        if (inst_reg[6:0] == 7'b0010011 || inst_reg[6:0] == 7'b0110011) begin // ADDI & ANDI & ADD
-          rf_writeback_reg <= alu_result_i;
-          state <= STATE_WB;
-        end else if (inst_reg[6:0] == 7'b0100011 || inst_reg[6:0] == 7'b0000011) begin // SW & SB & LB
-          state <= STATE_MEM;
-        end
-      end
-
-      STATE_MEM: begin
-        if (top_ack_i == 1'b1) begin // write or read is finished
-          if (inst_reg[6:0] == 7'b0100011) begin // SW & SB
+        STATE_IF: begin
+          if (top_ack_i == 1'b1) begin // reading inst finished
+            inst_reg <= top_dat_i;
             // top_cyc_o <= 1'b0;
             // top_stb_o <= 1'b0;
-            state <= STATE_IF;
-          end else if (inst_reg[6:0] == 7'b0000011) begin // LB
-            rf_writeback_reg <= $signed(top_dat_i[7:0]);
-            state <= STATE_WB;
+
+            pc_now_reg <= pc_reg; // pc_now_reg: this instr, pc_reg: next instr
+            pc_reg <= alu_result_i; // hold `addr` when wishbone request
+            state <= STATE_ID;
           end
         end
-      end
 
-      STATE_WB: begin
-        state <= STATE_IF;
-      end
+        STATE_ID: begin
+          if (inst_reg[6:0] == 7'b0010011) begin // ADDI $ ANDI
+            operand1_reg <= rf_rdata_a_i; // rs1
+            operand2_reg <= imm; // imm
+            state <= STATE_EXE;
+          end else if (inst_reg[6:0] == 7'b0110011) begin // ADD
+            operand1_reg <= rf_rdata_a_i; // rs1
+            operand2_reg <= rf_rdata_b_i; // rs2
+            state <= STATE_EXE;
+          end else if (inst_reg[6:0] == 7'b0100011) begin // SW & SB
+            operand1_reg <= rf_rdata_a_i; // rs1
+            operand2_reg <= imm; // signed extension
+            state <= STATE_EXE;
+          end else if (inst_reg[6:0] == 7'b0000011) begin // LB
+            operand1_reg <= rf_rdata_a_i; // rs1
+            operand2_reg <= imm;
+            state <= STATE_EXE;
+          end else if (inst_reg[6:0] == 7'b0110111) begin // LUI
+            state <= STATE_WB;
+          end else if (inst_reg[6:0] == 7'b1100011) begin // BEQ
+            if (rf_rdata_a_i == rf_rdata_b_i) begin
+              pc_reg <= pc_now_reg + imm;
+            end
+            state <= STATE_IF;
+          end
+        end
 
-      default: begin
-      end
-    endcase
+        STATE_EXE: begin
+          if (inst_reg[6:0] == 7'b0010011 || inst_reg[6:0] == 7'b0110011) begin // ADDI & ANDI & ADD
+            rf_writeback_reg <= alu_result_i;
+            state <= STATE_WB;
+          end else if (inst_reg[6:0] == 7'b0100011 || inst_reg[6:0] == 7'b0000011) begin // SW & SB & LB
+            state <= STATE_MEM;
+          end
+        end
+
+        STATE_MEM: begin
+          if (top_ack_i == 1'b1) begin // write or read is finished
+            if (inst_reg[6:0] == 7'b0100011) begin // SW & SB
+              // top_cyc_o <= 1'b0;
+              // top_stb_o <= 1'b0;
+              state <= STATE_END;
+            end else if (inst_reg[6:0] == 7'b0000011) begin // LB
+              rf_writeback_reg <= $signed(top_dat_i[7:0]);
+              state <= STATE_WB;
+            end
+          end
+        end
+
+        STATE_WB: begin
+          state <= STATE_IF;
+        end
+
+        STATE_END: begin
+          state <= STATE_IF;
+        end
+
+        default: begin
+        end
+      endcase
+
+    end
   end
 
   alu_32 u_alu_32 (
